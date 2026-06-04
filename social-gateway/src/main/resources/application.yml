@@ -1,0 +1,48 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: social-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: social-user
+          uri: lb://social-user
+          predicates:
+            - Path=/api/user/**
+        - id: social-post
+          uri: lb://social-post
+          predicates:
+            - Path=/api/post/**
+        - id: social-social
+          uri: lb://social-social
+          predicates:
+            - Path=/api/social/**
+        - id: social-message
+          uri: lb://social-message
+          predicates:
+            - Path=/api/message/**
+        - id: social-message-files
+          uri: lb://social-message
+          predicates:
+            - Path=/uploads/**
+        - id: social-search
+          uri: lb://social-search
+          predicates:
+            - Path=/api/search/**
+        - id: social-statistics
+          uri: lb://social-statistics
+          predicates:
+            - Path=/api/statistics/**
+        - id: social-ai
+          uri: lb://social-ai
+          predicates:
+            - Path=/api/ai/**
+          metadata:
+            response-timeout: 60000
+            connect-timeout: 5000
+
+jwt:
+  secret: socialPlatformSecretKey2024VeryLongAndSecure
+  expiration: 86400000
