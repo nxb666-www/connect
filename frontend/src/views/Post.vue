@@ -25,7 +25,7 @@
           <p class="note-title">{{ post.content?.substring(0, 30) }}{{ post.content?.length > 30 ? '...' : '' }}</p>
           <div class="note-meta">
             <div class="note-author">
-              <el-avatar :size="20" :src="post.avatar">{{ post.nickname?.charAt(0) || 'U' }}</el-avatar>
+              <el-avatar :size="20" :src="post.avatar" @click.stop="router.push(`/profile/${post.userId}`)">{{ post.nickname?.charAt(0) || 'U' }}</el-avatar>
               <span>{{ post.nickname || post.username }}</span>
             </div>
             <div class="note-actions-right">
@@ -39,6 +39,11 @@
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
                 <span>{{ post.likeCount || 0 }}</span>
+              </div>
+              <div class="note-collect" @click.stop="handleCollect(post)">
+                <svg width="14" height="14" viewBox="0 0 24 24" :fill="post.isCollected ? '#FFD93D' : 'none'" :stroke="post.isCollected ? '#FFD93D' : 'currentColor'" stroke-width="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
               </div>
             </div>
           </div>
@@ -78,7 +83,7 @@
         <!-- 右侧信息 -->
         <div class="detail-info">
           <div class="detail-header">
-            <el-avatar :size="40" :src="currentPost.avatar">{{ currentPost.nickname?.charAt(0) || 'U' }}</el-avatar>
+            <el-avatar :size="40" :src="currentPost.avatar" style="cursor:pointer" @click="router.push(`/profile/${currentPost.userId}`)">{{ currentPost.nickname?.charAt(0) || 'U' }}</el-avatar>
             <div class="detail-author">
               <span class="author-name">{{ currentPost.nickname || currentPost.username }}</span>
               <span class="post-time">{{ currentPost.createTime }}</span>
@@ -124,7 +129,7 @@
             </div>
             <div class="comment-list">
               <div v-for="comment in comments" :key="comment.id" class="comment-item">
-                <el-avatar :size="28" :src="comment.userAvatar">{{ comment.userName?.charAt(0) || 'U' }}</el-avatar>
+                <el-avatar :size="28" :src="comment.userAvatar" style="cursor:pointer" @click.stop="comment.userId && router.push(`/profile/${comment.userId}`)">{{ comment.userName?.charAt(0) || 'U' }}</el-avatar>
                 <div class="comment-content">
                   <span class="comment-author">{{ comment.userName }}</span>
                   <span class="comment-text">{{ comment.content }}</span>
@@ -286,30 +291,36 @@ const showPostDetail = async (post) => {
 }
 
 const handleLike = async (post) => {
+  const wasLiked = post.isLiked
   try {
-    if (post.isLiked) {
+    if (wasLiked) {
       await unlikePost(post.id)
       post.isLiked = false
-      post.likeCount = (post.likeCount || 1) - 1
+      post.likeCount = Math.max((post.likeCount || 1) - 1, 0)
     } else {
       await likePost(post.id)
       post.isLiked = true
       post.likeCount = (post.likeCount || 0) + 1
     }
-    // 同步更新详情弹窗中的数据
     if (currentPost.value?.id === post.id) {
       currentPost.value.isLiked = post.isLiked
       currentPost.value.likeCount = post.likeCount
     }
-  } catch (e) { console.error(e) }
+  } catch (e) {
+    post.isLiked = wasLiked
+    if (wasLiked) post.likeCount = (post.likeCount || 0) + 1
+    else post.likeCount = Math.max((post.likeCount || 1) - 1, 0)
+    ElMessage.error('点赞操作失败，请重试')
+  }
 }
 
 const handleCollect = async (post) => {
+  const wasCollected = post.isCollected
   try {
-    if (post.isCollected) {
+    if (wasCollected) {
       await uncollectPost(post.id)
       post.isCollected = false
-      post.collectCount = (post.collectCount || 1) - 1
+      post.collectCount = Math.max((post.collectCount || 1) - 1, 0)
       ElMessage.success('已取消收藏')
     } else {
       await collectPost(post.id)
@@ -321,7 +332,12 @@ const handleCollect = async (post) => {
       currentPost.value.isCollected = post.isCollected
       currentPost.value.collectCount = post.collectCount
     }
-  } catch (e) { console.error(e) }
+  } catch (e) {
+    post.isCollected = wasCollected
+    if (wasCollected) post.collectCount = (post.collectCount || 0) + 1
+    else post.collectCount = Math.max((post.collectCount || 1) - 1, 0)
+    ElMessage.error('收藏操作失败，请重试')
+  }
 }
 
 const handleShare = async (post) => {
@@ -569,6 +585,18 @@ const handlePublish = async () => {
 
 .note-likes:hover {
   color: #FF6B6B;
+}
+
+.note-collect {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: color 0.2s;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.note-collect:hover {
+  color: #FFD93D;
 }
 
 .note-actions-right {

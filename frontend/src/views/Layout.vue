@@ -86,12 +86,36 @@
             <span>搜索</span>
             <kbd>⌘K</kbd>
           </div>
-          <button class="icon-btn notification-btn" @click="goToMessage">
+          <button class="icon-btn notification-btn" @click="toggleNotifPanel" style="position:relative;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
-            <span v-if="unreadCount" class="notification-dot">{{ unreadCount }}</span>
+            <span v-if="notifCount > 0" class="notification-dot">{{ notifCount }}</span>
+            <div v-if="showNotifPanel" class="notif-dropdown" @click.stop>
+              <div class="notif-dropdown-header">
+                <span>通知</span>
+                <button class="notif-view-all" @click="goToNotification">查看全部</button>
+              </div>
+              <div v-if="notifList.length" class="notif-dropdown-list">
+                <div
+                  v-for="item in notifList"
+                  :key="item.id"
+                  class="notif-dropdown-item"
+                  :class="{ unread: item.isRead === 0 }"
+                  @click="handleNotifClick(item)"
+                >
+                  <el-avatar :size="32" :src="item.senderAvatar" class="notif-dropdown-avatar" style="cursor:pointer" @click.stop="router.push(`/profile/${item.senderId}`)">
+                    {{ item.senderName?.charAt(0) || 'U' }}
+                  </el-avatar>
+                  <div class="notif-dropdown-text">
+                    <span class="notif-dropdown-name">{{ item.senderName }}</span>
+                    <span>{{ notifTypeText[item.type] || item.content }}</span>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="notif-dropdown-empty">暂无通知</div>
+            </div>
           </button>
         </div>
       </header>
@@ -111,11 +135,15 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getUnreadCount } from '../api/message'
+import { getUnreadNotificationCount, getNotifications, markNotificationRead } from '../api/notification'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const unreadCount = ref(0)
+const notifCount = ref(0)
+const showNotifPanel = ref(false)
+const notifList = ref([])
 const layoutRef = ref(null)
 const sidebarRef = ref(null)
 const headerRef = ref(null)
@@ -155,7 +183,9 @@ const currentPageTitle = computed(() => {
     '/ai': 'AI助手',
     '/search': '搜索',
     '/profile': '个人中心',
-    '/admin': '管理后台'
+    '/notification': '通知',
+    '/admin': '管理后台',
+    '/settings': '设置'
   }
   return titles[route.path] || '首页'
 })
@@ -176,13 +206,61 @@ const goToMessage = () => {
   router.push('/message')
 }
 
+const notifTypeText = {
+  like: '赞了你的动态',
+  comment: '评论了你的动态',
+  follow: '关注了你',
+  friend_request: '向你发送了好友申请'
+}
+
+const toggleNotifPanel = async () => {
+  showNotifPanel.value = !showNotifPanel.value
+  if (showNotifPanel.value) {
+    try {
+      const res = await getNotifications(1, 5)
+      notifList.value = res.data?.records || []
+      refreshNotifCount()
+    } catch (e) { /* silent */ }
+  }
+}
+
+const goToNotification = () => {
+  showNotifPanel.value = false
+  router.push('/notification')
+}
+
+const handleNotifClick = async (item) => {
+  if (item.isRead === 0) {
+    try {
+      await markNotificationRead(item.id)
+      item.isRead = 1
+      notifCount.value = Math.max(0, notifCount.value - 1)
+    } catch (e) { /* silent */ }
+  }
+  showNotifPanel.value = false
+  if (item.type === 'like' || item.type === 'comment') {
+    if (item.targetId) router.push({ path: '/post', query: { id: item.targetId } })
+  } else {
+    router.push(`/profile/${item.senderId}`)
+  }
+}
+
+const refreshNotifCount = async () => {
+  try {
+    const res = await getUnreadNotificationCount()
+    notifCount.value = typeof res.data === 'number' ? res.data : 0
+  } catch (e) {
+    notifCount.value = 0
+  }
+}
+
 const handleUserMenu = (command) => {
   switch (command) {
     case 'profile':
       router.push('/profile')
       break
     case 'settings':
-      router.push('/profile')
+      router.push('/settings')
       break
     case 'logout':
       handleLogout()
@@ -203,7 +281,7 @@ const handleLogout = () => {
 }
 
 // 路由过渡动画
-const routeOrder = { '/home': 0, '/post': 1, '/friends': 2, '/message': 3, '/ai': 4, '/search': 5, '/profile': 6 }
+const routeOrder = { '/home': 0, '/post': 1, '/friends': 2, '/message': 3, '/ai': 4, '/search': 5, '/profile': 6, '/notification': 7, '/settings': 8 }
 
 watch(() => route.path, (to, from) => {
   const toOrder = routeOrder[to] ?? 3
@@ -225,16 +303,33 @@ const onUnreadUpdated = (e) => {
   unreadCount.value = e.detail || 0
 }
 
+const onNotifUpdated = () => {
+  refreshNotifCount()
+  notifList.value = []
+}
+
+const closeNotifPanel = (e) => {
+  if (showNotifPanel.value) {
+    showNotifPanel.value = false
+  }
+}
+
 onMounted(async () => {
   // 监听消息已读事件
   window.addEventListener('unread-updated', onUnreadUpdated)
+  window.addEventListener('notification-updated', onNotifUpdated)
+  document.addEventListener('click', closeNotifPanel)
 
   if (userStore.token) {
     try {
       await userStore.getUserInfo()
       await refreshUnreadCount()
-      // 每30秒刷新未读消息数
-      unreadPollTimer = setInterval(refreshUnreadCount, 30000)
+      await refreshNotifCount()
+      // 每5秒刷新未读消息数和通知数
+      unreadPollTimer = setInterval(() => {
+        refreshUnreadCount()
+        refreshNotifCount()
+      }, 5000)
     } catch (error) {
       console.error(error)
     }
@@ -272,6 +367,8 @@ onUnmounted(() => {
     unreadPollTimer = null
   }
   window.removeEventListener('unread-updated', onUnreadUpdated)
+  window.removeEventListener('notification-updated', onNotifUpdated)
+  document.removeEventListener('click', closeNotifPanel)
 })
 </script>
 
@@ -681,6 +778,100 @@ onUnmounted(() => {
 
 .slide-right-leave-to {
   transform: translateX(20px);
+}
+
+/* 通知下拉面板 */
+.notif-dropdown {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 340px;
+  background: rgba(22, 22, 30, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.notif-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.notif-view-all {
+  background: none;
+  border: none;
+  color: #FF6B6B;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.notif-view-all:hover {
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.notif-dropdown-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notif-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.notif-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.notif-dropdown-item.unread {
+  background: rgba(255, 107, 107, 0.05);
+}
+
+.notif-dropdown-avatar {
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #FF6B6B, #FFA07A);
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.notif-dropdown-text {
+  flex: 1;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notif-dropdown-name {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  margin-right: 4px;
+}
+
+.notif-dropdown-empty {
+  padding: 32px;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.2);
 }
 
 /* 响应式 */

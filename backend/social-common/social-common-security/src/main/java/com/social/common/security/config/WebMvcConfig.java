@@ -24,6 +24,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/user/register",
                         "/api/user/internal/**",
                         "/api/post/internal/**",
+                        "/api/social/internal/**",
+                        "/api/notification/internal/**",
                         "/doc.html",
                         "/webjars/**",
                         "/v3/api-docs/**"

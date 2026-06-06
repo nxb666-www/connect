@@ -1,5 +1,7 @@
 package com.social.user.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -11,6 +13,7 @@ import java.time.LocalDateTime;
 @Data
 public class UserVO implements Serializable {
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long userId;
     private String username;
     private String nickname;

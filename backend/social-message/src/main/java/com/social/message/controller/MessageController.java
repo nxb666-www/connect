@@ -92,6 +92,25 @@ public class MessageController {
         return Result.success(page);
     }
 
+    @Operation(summary = "获取群聊消息记录")
+    @GetMapping("/conversation/group/{groupId}")
+    public Result<Page<MessageVO>> getGroupConversation(
+            @PathVariable Long groupId,
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        Long userId = LoginUserContext.getUserId();
+        Page<MessageVO> page = messageService.getGroupConversation(userId, groupId, pageNum, pageSize);
+        return Result.success(page);
+    }
+
+    @Operation(summary = "标记群聊消息已读")
+    @PostMapping("/read/group/{groupId}")
+    public Result<Void> markGroupAsRead(@PathVariable Long groupId) {
+        Long userId = LoginUserContext.getUserId();
+        messageService.markGroupAsRead(userId, groupId);
+        return Result.success();
+    }
+
     @Operation(summary = "获取最近会话列表")
     @GetMapping("/conversations")
     public Result<List<MessageVO>> getRecentConversations() {

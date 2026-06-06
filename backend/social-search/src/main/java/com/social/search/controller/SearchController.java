@@ -1,5 +1,7 @@
 package com.social.search.controller;
 
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.social.common.core.result.Result;
 import com.social.common.security.context.LoginUserContext;
 import com.social.search.entity.SearchHistory;
@@ -22,10 +24,15 @@ public class SearchController {
 
     @Operation(summary = "综合搜索")
     @GetMapping
+    @SentinelResource(value = "search", blockHandler = "searchBlockHandler")
     public Result<SearchResultVO> search(@RequestParam String keyword) {
         Long userId = LoginUserContext.getUserId();
         SearchResultVO result = searchService.search(keyword, userId);
         return Result.success(result);
+    }
+
+    public Result<SearchResultVO> searchBlockHandler(@RequestParam String keyword, BlockException ex) {
+        return Result.error("搜索太频繁，请稍后再试");
     }
 
     @Operation(summary = "获取搜索历史")

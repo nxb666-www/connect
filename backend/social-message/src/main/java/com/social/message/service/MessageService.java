@@ -12,9 +12,13 @@ public interface MessageService {
 
     Page<MessageVO> getConversation(Long userId, Long targetUserId, int pageNum, int pageSize);
 
+    Page<MessageVO> getGroupConversation(Long userId, Long groupId, int pageNum, int pageSize);
+
     List<MessageVO> getRecentConversations(Long userId);
 
     Long getUnreadCount(Long userId);
 
     void markAsRead(Long userId, Long senderId);
+
+    void markGroupAsRead(Long userId, Long groupId);
 }

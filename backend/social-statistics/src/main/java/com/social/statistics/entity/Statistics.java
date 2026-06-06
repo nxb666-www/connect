@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @TableName("statistics")
 public class Statistics implements Serializable {
 
-    @TableId(type = IdType.ASSIGN_ID)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     private LocalDate date;

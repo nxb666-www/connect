@@ -1,5 +1,7 @@
 package com.social.search.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -16,6 +18,7 @@ public class SearchResultVO implements Serializable {
 
     @Data
     public static class UserResult implements Serializable {
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long userId;
         private String username;
         private String nickname;
@@ -25,7 +28,9 @@ public class SearchResultVO implements Serializable {
 
     @Data
     public static class PostResult implements Serializable {
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long postId;
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long userId;
         private String username;
         private String nickname;

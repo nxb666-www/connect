@@ -23,8 +23,25 @@ mybatis-plus:
     map-underscore-to-camel-case: true
   global-config:
     db-config:
-      id-type: ASSIGN_ID
+      id-type: AUTO
 
 jwt:
   secret: socialPlatformSecretKey2024VeryLongAndSecure
   expiration: 86400000
+
+seata:
+  enabled: true
+  application-id: social-social
+  tx-service-group: social-platform-tx-group
+  service:
+    vgroup-mapping:
+      social-platform-tx-group: default
+  registry:
+    type: nacos
+    nacos:
+      application: seata-server
+      server-addr: localhost:8848
+  config:
+    type: nacos
+    nacos:
+      server-addr: localhost:8848

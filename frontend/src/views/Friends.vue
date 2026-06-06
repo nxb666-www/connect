@@ -31,7 +31,7 @@
             class="friend-card"
           >
             <div class="friend-avatar">
-              <el-avatar :size="52" :src="friend.avatar">
+              <el-avatar :size="52" :src="friend.avatar" style="cursor:pointer" @click="goToProfile(friend.id)">
                 {{ friend.name?.charAt(0) || 'U' }}
               </el-avatar>
             </div>
@@ -118,7 +118,7 @@
       <template v-if="activeTab === 'requests'">
         <div class="request-list">
           <div v-for="request in friendRequests" :key="request.id" class="request-card">
-            <el-avatar :size="48" :src="request.avatar">
+            <el-avatar :size="48" :src="request.avatar" style="cursor:pointer" @click="goToProfile(request.id)">
               {{ request.name?.charAt(0) || 'U' }}
             </el-avatar>
             <div class="request-info">

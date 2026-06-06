@@ -145,4 +145,16 @@ public class SocialController {
         Long userId = LoginUserContext.getUserId();
         return Result.success(blacklistService.isBlocked(userId, targetUserId));
     }
+
+    @Operation(summary = "内部接口-检查是否为好友")
+    @GetMapping("/internal/friend/check/{userId}/{targetUserId}")
+    public Result<Boolean> isFriend(@PathVariable Long userId, @PathVariable Long targetUserId) {
+        return Result.success(friendService.isFriend(userId, targetUserId));
+    }
+
+    @Operation(summary = "内部接口-检查是否被拉黑")
+    @GetMapping("/internal/blacklist/check/{userId}/{targetUserId}")
+    public Result<Boolean> isBlockedInternal(@PathVariable Long userId, @PathVariable Long targetUserId) {
+        return Result.success(blacklistService.isBlocked(userId, targetUserId));
+    }
 }

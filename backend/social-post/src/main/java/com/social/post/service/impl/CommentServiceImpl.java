@@ -6,25 +6,30 @@ import com.social.common.core.exception.BusinessException;
 import com.social.post.dto.CommentCreateDTO;
 import com.social.post.entity.Comment;
 import com.social.post.entity.Post;
+import com.social.post.feign.NotificationFeignClient;
 import com.social.post.mapper.CommentMapper;
 import com.social.post.mapper.PostMapper;
 import com.social.post.service.CommentService;
 import com.social.post.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
 
     private final CommentMapper commentMapper;
     private final PostMapper postMapper;
+    private final NotificationFeignClient notificationFeignClient;
 
     @Override
     @Transactional
@@ -48,6 +53,20 @@ public class CommentServiceImpl implements CommentService {
         updateWrapper.eq(Post::getId, dto.getPostId())
                 .setSql("comment_count = comment_count + 1");
         postMapper.update(null, updateWrapper);
+
+        if (!post.getUserId().equals(userId)) {
+            try {
+                Map<String, Object> notif = new HashMap<>();
+                notif.put("receiverId", post.getUserId());
+                notif.put("senderId", userId);
+                notif.put("type", "comment");
+                notif.put("content", "评论了你的动态");
+                notif.put("targetId", dto.getPostId());
+                notificationFeignClient.sendNotification(notif);
+            } catch (Exception e) {
+                log.warn("发送评论通知失败: {}", e.getMessage());
+            }
+        }
 
         return comment.getId();
     }

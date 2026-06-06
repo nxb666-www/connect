@@ -62,10 +62,22 @@ const routes = [
         meta: { title: '好友' }
       },
       {
+        path: 'notification',
+        name: 'Notification',
+        component: () => import('../views/Notification.vue'),
+        meta: { title: '通知' }
+      },
+      {
         path: 'admin',
         name: 'Admin',
         component: () => import('../views/Admin.vue'),
         meta: { title: '管理后台', requireAdmin: true }
+      },
+      {
+        path: 'settings',
+        name: 'Settings',
+        component: () => import('../views/Settings.vue'),
+        meta: { title: '设置' }
       }
     ]
   }

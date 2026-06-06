@@ -107,7 +107,7 @@
         <div v-if="activeTab === 'collections'" class="post-list">
           <div v-for="post in collectedPosts" :key="post.id" class="post-card">
             <div class="post-header">
-              <el-avatar :size="36" :src="post.authorAvatar" class="post-avatar">
+              <el-avatar :size="36" :src="post.authorAvatar" class="post-avatar" style="cursor:pointer" @click="router.push(`/profile/${post.userId}`)">
                 {{ post.authorName?.charAt(0) || 'U' }}
               </el-avatar>
               <div class="post-meta">
@@ -144,7 +144,7 @@
         <div v-if="activeTab === 'likes'" class="post-list">
           <div v-for="post in likedPosts" :key="post.id" class="post-card">
             <div class="post-header">
-              <el-avatar :size="36" :src="post.authorAvatar" class="post-avatar">
+              <el-avatar :size="36" :src="post.authorAvatar" class="post-avatar" style="cursor:pointer" @click="router.push(`/profile/${post.userId}`)">
                 {{ post.authorName?.charAt(0) || 'U' }}
               </el-avatar>
               <div class="post-meta">
@@ -351,6 +351,7 @@ const loadUserInfo = async (userId) => {
     ])
     collectedPosts.value = (collectedRes.data?.records || []).map(p => ({
       id: p.id,
+      userId: p.userId,
       content: p.content,
       likeCount: p.likeCount || 0,
       commentCount: p.commentCount || 0,
@@ -360,6 +361,7 @@ const loadUserInfo = async (userId) => {
     }))
     likedPosts.value = (likedRes.data?.records || []).map(p => ({
       id: p.id,
+      userId: p.userId,
       content: p.content,
       likeCount: p.likeCount || 0,
       commentCount: p.commentCount || 0,

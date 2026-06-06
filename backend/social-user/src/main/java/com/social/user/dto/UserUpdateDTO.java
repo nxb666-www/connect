@@ -15,9 +15,13 @@ public class UserUpdateDTO implements Serializable {
     @Size(max = 255, message = "签名长度不能超过255个字符")
     private String signature;
 
-    @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
+    @Pattern(regexp = "^$|^1[3-9]\\d{9}$", message = "手机号格式不正确")
     private String phone;
 
     @Size(max = 100, message = "邮箱长度不能超过100个字符")
     private String email;
+
+    private String oldPassword;
+
+    private String password;
 }

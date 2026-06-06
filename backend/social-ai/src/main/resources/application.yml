@@ -23,7 +23,7 @@ mybatis-plus:
     map-underscore-to-camel-case: true
   global-config:
     db-config:
-      id-type: ASSIGN_ID
+      id-type: AUTO
 
 jwt:
   secret: socialPlatformSecretKey2024VeryLongAndSecure
@@ -33,3 +33,9 @@ doubao:
   api-key: 4c1fd2596d504d219715bf3aa11e591a.YD9IAlScwrRqD1M0
   api-url: https://open.bigmodel.cn/api/paas/v4
   model: glm-4-flash
+
+spring.cloud:
+  sentinel:
+    transport:
+      dashboard: localhost:8858
+    eager: true

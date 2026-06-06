@@ -25,6 +25,16 @@ export function markAsRead(senderId) {
   return request.post(`/message/read/${senderId}`)
 }
 
+// 获取群聊消息记录
+export function getGroupConversation(groupId, pageNum = 1, pageSize = 20) {
+  return request.get(`/message/conversation/group/${groupId}`, { params: { pageNum, pageSize } })
+}
+
+// 标记群聊消息已读
+export function markGroupAsRead(groupId) {
+  return request.post(`/message/read/group/${groupId}`)
+}
+
 // 上传文件/图片
 export function uploadMessageFile(file) {
   const formData = new FormData()

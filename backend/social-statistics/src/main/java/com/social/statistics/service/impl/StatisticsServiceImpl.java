@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.social.statistics.entity.Statistics;
 import com.social.statistics.feign.PostFeignClient;
 import com.social.statistics.feign.UserFeignClient;
+import com.social.statistics.mapper.PostMapper;
 import com.social.statistics.mapper.StatisticsMapper;
+import com.social.statistics.mapper.UserMapper;
 import com.social.statistics.service.StatisticsService;
 import com.social.statistics.vo.StatisticsVO;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,8 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final StatisticsMapper statisticsMapper;
     private final UserFeignClient userFeignClient;
     private final PostFeignClient postFeignClient;
+    private final UserMapper userMapper;
+    private final PostMapper postMapper;
 
     @Scheduled(cron = "0 0 2 * * ?")
     public void generateDailyStats() {
@@ -72,12 +76,13 @@ public class StatisticsServiceImpl implements StatisticsService {
     public StatisticsVO getPlatformStatistics() {
         StatisticsVO vo = new StatisticsVO();
 
+        // 真实总数
+        vo.setTotalUsers(userMapper.selectCount(null));
+        vo.setTotalPosts(postMapper.selectCount(null));
+
         LambdaQueryWrapper<Statistics> wrapper = new LambdaQueryWrapper<>();
         wrapper.orderByDesc(Statistics::getDate).last("LIMIT 30");
         List<Statistics> stats = statisticsMapper.selectList(wrapper);
-
-        vo.setTotalUsers(stats.stream().mapToLong(s -> s.getNewUsers().longValue()).sum());
-        vo.setTotalPosts(stats.stream().mapToLong(s -> s.getNewPosts().longValue()).sum());
         vo.setTodayNewUsers(stats.isEmpty() ? 0L : stats.get(0).getNewUsers().longValue());
         vo.setTodayNewPosts(stats.isEmpty() ? 0L : stats.get(0).getNewPosts().longValue());
 

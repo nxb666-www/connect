@@ -14,6 +14,7 @@ import com.social.post.entity.Comment;
 import com.social.post.entity.LikeRecord;
 import com.social.post.entity.Post;
 import com.social.post.feign.UserFeignClient;
+import com.social.post.feign.NotificationFeignClient;
 import com.social.post.mapper.CollectMapper;
 import com.social.post.mapper.CommentMapper;
 import com.social.post.mapper.LikeRecordMapper;
@@ -21,11 +22,13 @@ import com.social.post.mapper.PostMapper;
 import com.social.post.service.PostService;
 import com.social.post.vo.PostVO;
 import lombok.RequiredArgsConstructor;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,9 +44,11 @@ public class PostServiceImpl implements PostService {
     private final CommentMapper commentMapper;
     private final ObjectMapper objectMapper;
     private final UserFeignClient userFeignClient;
+    private final NotificationFeignClient notificationFeignClient;
     private final com.social.post.mq.PostMessageProducer postMessageProducer;
 
     @Override
+    @GlobalTransactional(name = "createPost", rollbackFor = Exception.class)
     @Transactional
     public Long createPost(Long userId, PostCreateDTO dto) {
         Post post = new Post();
@@ -69,7 +74,9 @@ public class PostServiceImpl implements PostService {
         postMapper.insert(post);
 
         // RocketMQ: 异步通知（无MQ服务器时静默跳过）
-        postMessageProducer.sendPostCreatedMessage(post.getId(), userId);
+        String preview = dto.getContent() != null && dto.getContent().length() > 50
+                ? dto.getContent().substring(0, 50) + "..." : dto.getContent();
+        postMessageProducer.sendPostCreatedMessage(post.getId(), userId, preview);
 
         return post.getId();
     }
@@ -101,7 +108,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public Page<PostVO> getUserPosts(Long userId, int pageNum, int pageSize) {
+    public Page<PostVO> getUserPosts(Long userId, Long currentUserId, int pageNum, int pageSize) {
         Page<Post> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Post::getUserId, userId)
@@ -112,7 +119,7 @@ public class PostServiceImpl implements PostService {
         Page<PostVO> voPage = new Page<>(pageNum, pageSize);
         voPage.setTotal(postPage.getTotal());
         voPage.setRecords(postPage.getRecords().stream()
-                .map(post -> convertToVO(post, userId))
+                .map(post -> convertToVO(post, currentUserId))
                 .toList());
         return voPage;
     }
@@ -149,6 +156,21 @@ public class PostServiceImpl implements PostService {
         updateWrapper.eq(Post::getId, postId)
                 .setSql("like_count = like_count + 1");
         postMapper.update(null, updateWrapper);
+
+        Post post = postMapper.selectById(postId);
+        if (post != null && !post.getUserId().equals(userId)) {
+            try {
+                Map<String, Object> notif = new HashMap<>();
+                notif.put("receiverId", post.getUserId());
+                notif.put("senderId", userId);
+                notif.put("type", "like");
+                notif.put("content", "赞了你的动态");
+                notif.put("targetId", postId);
+                notificationFeignClient.sendNotification(notif);
+            } catch (Exception e) {
+                log.warn("发送点赞通知失败: {}", e.getMessage());
+            }
+        }
     }
 
     @Override

@@ -104,7 +104,7 @@
       <div class="preview-list">
         <div v-for="post in recentPosts" :key="post.id" class="preview-item" @click="router.push('/post')">
           <div class="preview-header">
-            <el-avatar :size="36" :src="post.avatar" class="preview-avatar">{{ post.nickname?.charAt(0) || 'U' }}</el-avatar>
+            <el-avatar :size="36" :src="post.avatar" class="preview-avatar" style="cursor:pointer" @click.stop="router.push(`/profile/${post.userId}`)">{{ post.nickname?.charAt(0) || 'U' }}</el-avatar>
             <div class="preview-meta">
               <span class="preview-author">{{ post.nickname || post.username }}</span>
               <span class="preview-time">{{ post.createTime }}</span>
@@ -181,18 +181,12 @@ const loadData = async () => {
       getPostFeed(1, 5)
     ])
 
-    if (statsRes.status === 'fulfilled' && statsRes.value?.data) {
-      const s = statsRes.value.data
-      platformStats.value = {
-        postCount: s.totalPosts || s.postCount || 0,
-        userCount: s.totalUsers || s.userCount || 0,
-        interactionCount: (s.totalLikes || 0) + (s.totalComments || 0)
-      }
-    }
-
     if (postsRes.status === 'fulfilled' && postsRes.value?.data) {
-      const records = postsRes.value.data.records || []
+      const page = postsRes.value.data
+      const records = page.records || []
       recentPosts.value = records.slice(0, 5)
+      // 用动态列表的实际总数，而非统计服务的30天累加
+      platformStats.value.postCount = page.total || 0
 
       // 提取热门话题
       const topicMap = {}
@@ -205,6 +199,12 @@ const loadData = async () => {
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 6)
+    }
+
+    if (statsRes.status === 'fulfilled' && statsRes.value?.data) {
+      const s = statsRes.value.data
+      platformStats.value.userCount = s.totalUsers || s.userCount || 0
+      platformStats.value.interactionCount = (s.totalLikes || 0) + (s.totalComments || 0)
     }
   } catch (e) {
     console.error('加载首页数据失败', e)

@@ -15,7 +15,7 @@ public interface PostService {
 
     Page<PostVO> getPostFeed(Long userId, int pageNum, int pageSize);
 
-    Page<PostVO> getUserPosts(Long userId, int pageNum, int pageSize);
+    Page<PostVO> getUserPosts(Long userId, Long currentUserId, int pageNum, int pageSize);
 
     void deletePost(Long postId, Long userId);
 

@@ -23,10 +23,18 @@ spring:
           uri: lb://social-message
           predicates:
             - Path=/api/message/**
+        - id: social-notification
+          uri: lb://social-message
+          predicates:
+            - Path=/api/notification/**
         - id: social-message-files
           uri: lb://social-message
           predicates:
             - Path=/uploads/**
+        - id: social-group
+          uri: lb://social-message
+          predicates:
+            - Path=/api/group/**
         - id: social-search
           uri: lb://social-search
           predicates:
@@ -46,3 +54,9 @@ spring:
 jwt:
   secret: socialPlatformSecretKey2024VeryLongAndSecure
   expiration: 86400000
+
+spring.cloud:
+  sentinel:
+    transport:
+      dashboard: localhost:8858
+    eager: true

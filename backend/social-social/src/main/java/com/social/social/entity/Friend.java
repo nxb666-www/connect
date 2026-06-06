@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @TableName("friend")
 public class Friend implements Serializable {
 
-    @TableId(type = IdType.ASSIGN_ID)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     private Long userId;

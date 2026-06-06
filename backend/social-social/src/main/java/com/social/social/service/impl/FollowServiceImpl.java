@@ -4,21 +4,27 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.social.common.core.exception.BusinessException;
 import com.social.social.entity.Follow;
 import com.social.social.entity.Friend;
+import com.social.social.feign.NotificationFeignClient;
 import com.social.social.mapper.FollowMapper;
 import com.social.social.mapper.FriendMapper;
 import com.social.social.service.FollowService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FollowServiceImpl implements FollowService {
 
     private final FollowMapper followMapper;
     private final FriendMapper friendMapper;
+    private final NotificationFeignClient notificationFeignClient;
 
     @Override
     @Transactional
@@ -38,6 +44,18 @@ public class FollowServiceImpl implements FollowService {
         follow.setUserId(userId);
         follow.setFollowId(followId);
         followMapper.insert(follow);
+
+        try {
+            Map<String, Object> notif = new HashMap<>();
+            notif.put("receiverId", followId);
+            notif.put("senderId", userId);
+            notif.put("type", "follow");
+            notif.put("content", "关注了你");
+            notif.put("targetId", null);
+            notificationFeignClient.sendNotification(notif);
+        } catch (Exception e) {
+            log.warn("发送关注通知失败: {}", e.getMessage());
+        }
 
         // 检查对方是否也关注了自己（互关）
         LambdaQueryWrapper<Follow> reverseWrapper = new LambdaQueryWrapper<>();

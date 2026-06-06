@@ -119,17 +119,24 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
-        if (dto.getNickname() != null) {
+        if (dto.getNickname() != null && !dto.getNickname().isEmpty()) {
             user.setNickname(dto.getNickname());
         }
         if (dto.getSignature() != null) {
             user.setSignature(dto.getSignature());
         }
-        if (dto.getPhone() != null) {
+        if (dto.getPhone() != null && !dto.getPhone().isEmpty()) {
             user.setPhone(dto.getPhone());
         }
-        if (dto.getEmail() != null) {
+        if (dto.getEmail() != null && !dto.getEmail().isEmpty()) {
             user.setEmail(dto.getEmail());
+        }
+        if (dto.getOldPassword() != null && !dto.getOldPassword().isEmpty()
+                && dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            if (!BCrypt.checkpw(dto.getOldPassword(), user.getPassword())) {
+                throw new BusinessException("当前密码错误");
+            }
+            user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt()));
         }
         userMapper.updateById(user);
     }

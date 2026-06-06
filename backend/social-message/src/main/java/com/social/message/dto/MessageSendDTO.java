@@ -10,8 +10,9 @@ import java.io.Serializable;
 @Data
 public class MessageSendDTO implements Serializable {
 
-    @NotNull(message = "接收者ID不能为空")
     private Long receiverId;
+
+    private Long groupId;
 
     @NotBlank(message = "消息内容不能为空")
     @Size(max = 2000, message = "消息内容不能超过2000字")

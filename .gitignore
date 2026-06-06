@@ -26,3 +26,4 @@ uploads/
 
 # Nacos
 logs/
+frontend/sessionStore/

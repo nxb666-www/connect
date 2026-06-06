@@ -183,3 +183,44 @@ CREATE TABLE IF NOT EXISTS `statistics` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_date` (`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='统计表';
+
+-- 通知表
+CREATE TABLE IF NOT EXISTS `notification` (
+    `id` BIGINT NOT NULL COMMENT '通知ID',
+    `receiver_id` BIGINT NOT NULL COMMENT '接收者ID',
+    `sender_id` BIGINT NOT NULL COMMENT '发送者ID',
+    `type` VARCHAR(20) NOT NULL COMMENT '类型(like/comment/follow/friend_request)',
+    `content` VARCHAR(255) DEFAULT NULL COMMENT '通知内容',
+    `target_id` BIGINT DEFAULT NULL COMMENT '关联对象ID(动态ID/评论ID等)',
+    `is_read` TINYINT DEFAULT 0 COMMENT '是否已读(0未读 1已读)',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_receiver` (`receiver_id`, `is_read`),
+    KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知表';
+
+-- 群聊表
+CREATE TABLE IF NOT EXISTS `chat_group` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '群聊ID',
+    `name` VARCHAR(50) NOT NULL COMMENT '群名称',
+    `avatar` VARCHAR(255) DEFAULT NULL COMMENT '群头像',
+    `owner_id` BIGINT NOT NULL COMMENT '群主ID',
+    `member_count` INT DEFAULT 0 COMMENT '成员数',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_owner_id` (`owner_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='群聊表';
+
+-- 群成员表
+CREATE TABLE IF NOT EXISTS `group_member` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'ID',
+    `group_id` BIGINT NOT NULL COMMENT '群聊ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `nickname` VARCHAR(50) DEFAULT NULL COMMENT '群内昵称',
+    `role` TINYINT DEFAULT 0 COMMENT '角色(0普通成员 1管理员 2群主)',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_group_user` (`group_id`, `user_id`),
+    KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='群成员表';

@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: social-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: qwe#123
+      MYSQL_DATABASE: social_platform
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - social-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: social-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - social-net
+
+  nacos:
+    image: nacos/nacos-server:v2.3.0
+    container_name: social-nacos
+    environment:
+      MODE: standalone
+      SPRING_DATASOURCE_PLATFORM: ""
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    networks:
+      - social-net
+
+  rocketmq-namesrv:
+    image: apache/rocketmq:5.1.4
+    container_name: rocketmq-namesrv
+    command: sh mqnamesrv
+    ports:
+      - "9876:9876"
+    networks:
+      - social-net
+
+  rocketmq-broker:
+    image: apache/rocketmq:5.1.4
+    container_name: rocketmq-broker
+    command: sh mqbroker -n rocketmq-namesrv:9876 -c /opt/rocketmq/conf/broker.conf
+    ports:
+      - "10911:10911"
+    depends_on:
+      - rocketmq-namesrv
+    networks:
+      - social-net
+
+  sentinel:
+    image: bladex/sentinel-dashboard:1.8.8
+    container_name: social-sentinel
+    ports:
+      - "8858:8858"
+    networks:
+      - social-net
+
+  seata:
+    image: seataio/seata-server:2.1.0
+    container_name: social-seata
+    environment:
+      SEATA_PORT: 8091
+      STORE_MODE: file
+    ports:
+      - "8091:8091"
+      - "7091:7091"
+    networks:
+      - social-net
+
+volumes:
+  mysql-data:
+
+networks:
+  social-net:
+    driver: bridge

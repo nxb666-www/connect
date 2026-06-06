@@ -1,5 +1,7 @@
 package com.social.ai.controller;
 
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.social.ai.dto.AiChatDTO;
 import com.social.ai.service.AiService;
 import com.social.ai.vo.AiChatVO;
@@ -23,10 +25,15 @@ public class AiController {
 
     @Operation(summary = "发送AI对话消息")
     @PostMapping("/chat")
+    @SentinelResource(value = "aiChat", blockHandler = "aiChatBlockHandler")
     public Result<AiChatVO> chat(@Valid @RequestBody AiChatDTO dto) {
         Long userId = LoginUserContext.getUserId();
         AiChatVO vo = aiService.chat(userId, dto);
         return Result.success(vo);
+    }
+
+    public Result<AiChatVO> aiChatBlockHandler(@Valid @RequestBody AiChatDTO dto, BlockException ex) {
+        return Result.error("AI对话太频繁，请稍后再试");
     }
 
     @Operation(summary = "获取对话历史")

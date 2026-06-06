@@ -9,6 +9,8 @@ import com.social.post.service.CommentService;
 import com.social.post.service.PostService;
 import com.social.post.vo.CommentVO;
 import com.social.post.vo.PostVO;
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -45,12 +47,20 @@ public class PostController {
 
     @Operation(summary = "获取动态列表（广场）")
     @GetMapping("/feed")
+    @SentinelResource(value = "getPostFeed", blockHandler = "getPostFeedBlockHandler")
     public Result<Page<PostVO>> getPostFeed(
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize) {
         Long userId = LoginUserContext.getUserId();
         Page<PostVO> page = postService.getPostFeed(userId, pageNum, pageSize);
         return Result.success(page);
+    }
+
+    public Result<Page<PostVO>> getPostFeedBlockHandler(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize,
+            BlockException ex) {
+        return Result.error("请求太频繁，请稍后再试");
     }
 
     @Operation(summary = "获取用户动态列表")
@@ -60,7 +70,7 @@ public class PostController {
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize) {
         Long currentUserId = LoginUserContext.getUserId();
-        Page<PostVO> page = postService.getUserPosts(userId, pageNum, pageSize);
+        Page<PostVO> page = postService.getUserPosts(userId, currentUserId, pageNum, pageSize);
         return Result.success(page);
     }
 

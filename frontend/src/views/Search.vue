@@ -63,7 +63,7 @@
       <div v-if="activeTab === 'posts'" class="result-list">
         <div v-for="post in searchResults.posts" :key="post.id" class="post-item" @click="goToPost(post)">
           <div class="post-header">
-            <el-avatar :size="36" :src="post.avatar">
+            <el-avatar :size="36" :src="post.avatar" style="cursor:pointer" @click.stop="router.push(`/profile/${post.userId}`)">
               {{ post.nickname?.charAt(0) || post.username?.charAt(0) || 'U' }}
             </el-avatar>
             <div class="post-meta">
@@ -224,6 +224,7 @@ const doSearch = async () => {
     }))
     searchResults.posts = (data.posts || []).map(p => ({
       id: p.postId || p.id,
+      userId: p.userId,
       nickname: p.nickname || p.username,
       avatar: p.avatar || '',
       username: p.username,
